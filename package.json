@@ -1,0 +1,27 @@
+{
+  "name": "depapi-server",
+  "title": "Depapi Server",
+  "description": "A server for depapi - a dependency API - separate your script and style dependencies into a separate service",
+  "version": "0.1.0",
+  "main": "index.js",
+  "homepage": "http://github.com/bjester/depapi-server",
+  "author": {
+    "name": "Blaine Jester",
+    "url": "http://blainejester.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bjester/depapi-server.git"
+  },
+  "keywords": [
+    "resource injection",
+    "script dependency",
+    "api",
+    "require uglify"
+  ],
+  "dependencies": {
+    "deferred": "^0.7.2",
+    "hapi": "^8.1.0"
+  },
+  "devDependencies": {}
+}
