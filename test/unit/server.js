@@ -98,5 +98,97 @@ describe('Server', function()
       var s = new Server(config);
       return expect(s.start()).to.be.rejectedWith(err);
     });
+    
+    it('should wait for promises added using wait()', function()
+    {
+      var testVal = 'before';
+      var d = defer();
+      
+      Server.super_.prototype.start = function(callback)
+      {
+        testVal = 'after';
+        callback();
+      };
+      
+      var s = new Server(config);
+      s.wait(d.promise);
+      
+      var pBefore = s._promise;
+      var pAfter = s.start();
+      
+      var done = pAfter.then(function()
+      {
+        expect(testVal).to.equal('after');
+      });
+      
+      expect(testVal).to.equal('before');
+      expect(pBefore).to.be.fulfilled.then(function()
+      {
+        expect(pAfter).to.be.fulfilled;
+      });
+      
+      d.resolve();
+      return done;
+    });
+  });
+  
+  describe('.wait()', function()
+  {
+    it('should change ._promise for chaining', function()
+    {
+      var firstDef = defer();
+      var secondDef = defer();
+      
+      var s = new Server(config);
+      var before = s._promise;
+      
+      assert.equal(before, s._promise);
+      
+      s.wait(firstDef.promise)
+        .wait(secondDef);
+        
+      assert.notEqual(before, s._promise);
+      
+      var done = expect(before).to.be.fulfilled
+        .then(function()
+        {
+          expect(firstDef.promise).to.be.fulfilled;
+          expect(secondDef.promise).not.to.be.fulfilled;
+        })
+        .then(function()
+        {
+          expect(secondDef.promise).to.be.fulfilled;
+        });
+        
+      s._defer.resolve();
+      firstDef.resolve();
+      secondDef.resolve();
+        
+      return done;  
+    });
+    
+    it('should return Server instance', function(done)
+    {
+      var s = new Server(config);
+      
+      expect(s.wait(defer().promise)).to.be.instanceOf(Server);
+      done();  
+    });
+  });
+  
+  describe('.addController()', function()
+  {
+    var controllerFixture = require('test/fixture/controller.js');
+    var routeFixture = require('test/fixture/route.js');
+    var testController = require('test/lib/mock/controller.js')(controllerFixture);
+    
+    it('should add controller to array', function(done)
+    {
+      var s = new Server(config);
+      s.addController(testController);
+      
+      expect(s._controllers).to.have.length(1);
+      done();
+    });
   });
 });
