@@ -9,6 +9,9 @@
     "name": "Blaine Jester",
     "url": "http://blainejester.com"
   },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha test/unit"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/bjester/depapi-server.git"
@@ -30,5 +33,9 @@
     "mongodb": "^2.0.31",
     "uglifyify": "^3.0.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "chai": "^2.3.0",
+    "chai-as-promised": "^5.0.0",
+    "mocha": "^2.2.5"
+  }
 }
