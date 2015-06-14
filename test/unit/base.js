@@ -5,7 +5,7 @@ var MockBaseFactory = require('test/lib/mock/base.js');
 
 describe('Base', function()
 {
-  describe('constructor', function()
+  describe('.__construct()', function()
   {
     it('should trigger ready event on ready()', function()
     {
@@ -192,6 +192,7 @@ describe('Base', function()
           var done = expect(d2.promise).to.be.fulfilled.then(function()
           {
             expect(testVal).to.equal(true);
+            expect(b._begun).to.equal(true);
           });
           
           d2.resolve();
@@ -226,6 +227,14 @@ describe('Base', function()
       });
       
       return b.ready();
+    });
+    
+    it('should skip if already begun', function() 
+    {
+      var b = MockBaseFactory();
+      b._begun = true;
+      
+      return expect(b.begin()).to.be.fulfilled;
     });
   });
 

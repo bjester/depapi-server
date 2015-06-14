@@ -36,7 +36,7 @@ var resourceController = new ResourceControl();
 bundleController.addRoute(bunRoute);
 resourceController.addRoute(resRoute);
 
-var server = new Server(config);
+var server = Server.get(config);
 auth.registerWithServer(server);
 
 server

@@ -1,58 +1,60 @@
 require('test/lib/bootstrap.js');
 var defer = require('deferred');
 var hapi = require('hapi');
+
+var Base = require('lib/base.js');
 var Server = require('lib/server.js');
 
 describe('Server', function()
 {
   var config = require('test/lib/mock/config.js')(require('test/fixture/config.js'));
   
-  it('should inherit Hapi Server', function(done)
+  it('should inherit Base', function(done)
   {
-    expect(Server).to.have.property('super_', hapi.Server);
+    expect(Server).to.have.property('super_', Base);
     
-    var s = new Server(config);
-    expect(s).to.be.instanceOf(hapi.Server);
+    var s = Server.get(config);
+    expect(s).to.be.instanceOf(Base);
     expect(s).to.be.instanceOf(Server);
     done();
   });
   
-  describe('#constructor', function()
+  describe('Server.get()', function() 
   {
-    it('should call parent constructor', function(done)
+    it('should create a hapi.Server instance', function(done)
     {
-      var superConstructor = Server.super_;
-      
-      Server.super_ = function()
-      {
-        this.testValue = true;
-        this.constructor = superConstructor;
-        superConstructor.call(this);
-      };
-      
-      var s = new Server(config);
-      expect(s).to.have.property('testValue', true);
-      
+      var s = Server.get(config);
+      expect(s._server).to.be.instanceOf(hapi.Server);
       done();
     });
     
     it('should set config values for the connection', function(done)
     {
-      var s = new Server(config);
-      expect(s.connections).to.have.length(1);
+      var s = Server.get(config);
+      expect(s._server.connections).to.have.length(1);
       
-      var connection = s.connections[0];
+      var connection = s._server.connections[0];
       expect(connection).to.have.property('info');
       expect(connection.info).to.have.property('host', config.get('server.host'));
       expect(connection.info).to.have.property('port', config.get('server.port'));
       
       done();
     });
-    
-    it('should initialize the main deferred', function(done)
+  });
+  
+  describe('#constructor', function()
+  {
+    it('should call parent constructor', function(done)
     {
-      var s = new Server(config);
-      expect(s._defer).to.be.instanceOf(defer.Deferred);
+      Server.prototype.__construct = function()
+      {
+        this.testValue = true;
+        Base.prototype.__construct.call(this);
+      };
+      
+      var s = Server.get(config);
+      expect(s).to.have.property('testValue', true);
+      
       done();
     });
     
@@ -75,14 +77,15 @@ describe('Server', function()
   
   describe('.start()', function()
   {
-    it('should call super start', function()
+    
+    it('should call hapi.Server.start', function()
     {
-      Server.super_.prototype.start = function(callback)
+      var s = Server.get(config);
+      s._server.start = function(callback)
       {
         callback();
       };
       
-      var s = new Server(config);
       return expect(s.start()).to.be.fulfilled;
     });
     
@@ -90,89 +93,12 @@ describe('Server', function()
     {
       var err = 'some error';
       
-      Server.super_.prototype.start = function(callback)
+      var s = Server.get(config);
+      s._server.start = function(callback)
       {
         callback(err);
       };
-      
-      var s = new Server(config);
       return expect(s.start()).to.be.rejectedWith(err);
-    });
-    
-    it('should wait for promises added using wait()', function()
-    {
-      var testVal = 'before';
-      var d = defer();
-      
-      Server.super_.prototype.start = function(callback)
-      {
-        testVal = 'after';
-        callback();
-      };
-      
-      var s = new Server(config);
-      s.wait(d.promise);
-      
-      var pBefore = s._promise;
-      var pAfter = s.start();
-      
-      var done = pAfter.then(function()
-      {
-        expect(testVal).to.equal('after');
-      });
-      
-      expect(testVal).to.equal('before');
-      expect(pBefore).to.be.fulfilled.then(function()
-      {
-        expect(pAfter).to.be.fulfilled;
-      });
-      
-      d.resolve();
-      return done;
-    });
-  });
-  
-  describe('.wait()', function()
-  {
-    it('should change ._promise for chaining', function()
-    {
-      var firstDef = defer();
-      var secondDef = defer();
-      
-      var s = new Server(config);
-      var before = s._promise;
-      
-      assert.equal(before, s._promise);
-      
-      s.wait(firstDef.promise)
-        .wait(secondDef);
-        
-      assert.notEqual(before, s._promise);
-      
-      var done = expect(before).to.be.fulfilled
-        .then(function()
-        {
-          expect(firstDef.promise).to.be.fulfilled;
-          expect(secondDef.promise).not.to.be.fulfilled;
-        })
-        .then(function()
-        {
-          expect(secondDef.promise).to.be.fulfilled;
-        });
-        
-      s._defer.resolve();
-      firstDef.resolve();
-      secondDef.resolve();
-        
-      return done;  
-    });
-    
-    it('should return Server instance', function(done)
-    {
-      var s = new Server(config);
-      
-      expect(s.wait(defer().promise)).to.be.instanceOf(Server);
-      done();  
     });
   });
   
@@ -184,7 +110,7 @@ describe('Server', function()
     
     it('should add controller to array', function(done)
     {
-      var s = new Server(config);
+      var s = Server.get(config);
       s.addController(testController);
       
       expect(s._controllers).to.have.length(1);
